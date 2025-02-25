@@ -1,18 +1,22 @@
 import { Injectable } from '@nestjs/common';
-// import { HttpService } from '@nestjs/axios';
+import { HttpService } from '@nestjs/axios';
+import { lastValueFrom } from 'rxjs';
 
 export interface StockProductDto {
   productId: string;
-  quantity: number;
+  nbProducts: number;
 }
 
 @Injectable()
 export class StockService {
+  constructor(private readonly httpService: HttpService) {}
+
   async getOrderProducts(orderId: string): Promise<StockProductDto[]> {
+    /* Bouchon - Décommenter cette section si besoin pour tester sans microservice stock
     const mockOrders = {
       '123': [
-        { productId: 'prod-123', quantity: 2 },
-        { productId: 'prod-456', quantity: 1 },
+        { productId: 'prod-123', nbProducts: 2 },
+        { productId: 'prod-456', nbProducts: 1 },
       ],
     };
     if (!mockOrders[orderId]) {
@@ -22,41 +26,59 @@ export class StockService {
 
     console.log(`Récupération des produits pour la commande ${orderId}`);
     return mockOrders[orderId];
+    */
+    try {
+      const response = await lastValueFrom(
+        this.httpService.get(
+          `http://donoma.ddns.net/api/api/orders/${orderId}`,
+        ),
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        `Erreur lors de la récupération des produits pour la commande ${orderId}`,
+        error,
+      );
+      return [];
+    }
   }
 
-  async removeStock(productId: string, quantity: number): Promise<boolean> {
+  async removeStock(productId: string, nbProducts: number): Promise<boolean> {
     console.log(
-      `Simuler la suppression de ${quantity} unités du produit ${productId}`,
+      `Demande de suppression de ${nbProducts} unités du produit ${productId}`,
     );
-    // Bouchon temporaire pour tester sans dépendance au microservice stock
+
+    /* Bouchon - Décommenter cette section si besoin pour tester sans microservice stock
     const stockMock = {
       'prod-123': 3,
       'prod-456': 10,
     };
-
-    if (stockMock[productId] && stockMock[productId] >= quantity) {
+    if (stockMock[productId] && stockMock[productId] >= nbProducts) {
       console.log(`Stock suffisant pour ${productId}, suppression simulée.`);
       return true;
     } else {
       console.warn(`Stock insuffisant pour ${productId}`);
       return false;
     }
-
-    /*
-    // Code réel à réactiver une fois le microservice stock fonctionnel
+    */
     try {
-      const response = await this.httpService.post(
-        `$urlServeur/api/stock/${productId}/movement`,
-        {
-          productId,
-          quantity,
-          status: StockMovementType.Removal,
-        }
-      ).toPromise();
+      const response = await lastValueFrom(
+        this.httpService.post(
+          `http://donoma.ddns.net/api/api/stock/${productId}/movement`,
+          {
+            productId,
+            nbProducts,
+            status: 'Removal',
+          },
+        ),
+      );
       return response.status === 204;
     } catch (error) {
+      console.error(
+        `Erreur lors de la suppression du stock pour ${productId}`,
+        error,
+      );
       return false;
     }
-    */
   }
 }

@@ -32,7 +32,7 @@ export class ShippingController {
     for (const product of orderProducts) {
       const success = await this.stockService.removeStock(
         product.productId,
-        product.quantity,
+        product.nbProducts,
       );
       if (!success) {
         throw new BadRequestException(
@@ -48,10 +48,10 @@ export class ShippingController {
   async createShipping(@Body() shippingRequest: any): Promise<void> {
     if (
       !shippingRequest.orderId ||
-      typeof shippingRequest.quantity !== 'number'
+      typeof shippingRequest.nbProducts !== 'number'
     ) {
       throw new BadRequestException(
-        'Payload invalide : orderId requis et quantity doit être un nombre.',
+        'Payload invalide : orderId requis et nbProducts doit être un nombre.',
       );
     }
     await this.shippingService.addShippingRequest(shippingRequest);

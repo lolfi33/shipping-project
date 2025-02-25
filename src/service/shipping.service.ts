@@ -17,7 +17,7 @@ export class ShippingService {
 
   async addShippingRequest(shippingRequest: any): Promise<void> {
     this.pendingOrders.push(shippingRequest);
-    this.totalPendingQuantity += shippingRequest.quantity;
+    this.totalPendingQuantity += shippingRequest.nbProducts;
     this.logger.log(
       `Nouvelle commande ajoutée. Quantité en attente : ${this.totalPendingQuantity}`,
     );
