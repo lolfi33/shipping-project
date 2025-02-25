@@ -30,7 +30,7 @@ export class StockService {
     try {
       const response = await lastValueFrom(
         this.httpService.get(
-          `http://donoma.ddns.net/api/api/orders/${orderId}`,
+          `http://microsrvcommande-5d7aa803.koyeb.app/api/api/orders/${orderId}`,
         ),
       );
       return response.data;

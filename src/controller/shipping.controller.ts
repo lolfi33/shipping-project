@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { StockService } from '../service/stock.service';
 import { ShippingService } from '../service/shipping.service';
+import { Order } from 'src/entities/Order';
+import { ShippingRequestDto } from 'src/dto/ShippingRequestDto';
 
 @Controller('shipping')
 export class ShippingController {
@@ -55,5 +57,15 @@ export class ShippingController {
       );
     }
     await this.shippingService.addShippingRequest(shippingRequest);
+  }
+
+  @Post()
+  public async addOrder(@Body() order: ShippingRequestDto): Promise<Order> {
+    return this.shippingService.create(order);
+  }
+
+  @Get() // Ajouter cette méthode
+  public async getAllOrders(): Promise<Order[]> {
+    return this.shippingService.findAll();
   }
 }

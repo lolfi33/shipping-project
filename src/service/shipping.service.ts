@@ -1,7 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
+import { ShippingRequestDto } from 'src/dto/ShippingRequestDto';
+import { Order } from 'src/entities/Order';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class ShippingService {
@@ -13,6 +21,8 @@ export class ShippingService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    @InjectRepository(Order)
+    private ordersRepository: Repository<Order>,
   ) {}
 
   async addShippingRequest(shippingRequest: any): Promise<void> {
@@ -63,5 +73,24 @@ export class ShippingService {
 
     this.pendingOrders = [];
     this.totalPendingQuantity = 0;
+  }
+
+  async create(shippingRequest: ShippingRequestDto): Promise<Order> {
+    try {
+      const order = this.ordersRepository.create(shippingRequest);
+      return this.ordersRepository.save(order);
+    } catch (error) {
+      console.error(
+        'Erreur lors de la création de la demande de livraison :',
+        error,
+      );
+      throw new InternalServerErrorException(
+        'Impossible de créer la demande de livraison.',
+      );
+    }
+  }
+
+  async findAll(): Promise<Order[]> {
+    return this.ordersRepository.find();
   }
 }
