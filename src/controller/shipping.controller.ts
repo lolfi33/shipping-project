@@ -16,10 +16,10 @@ export class ShippingController {
   ping() {
     return 'pong';
   }
+
   @Post()
   @HttpCode(204)
   async createShipping(@Body() shippingRequest: any): Promise<void> {
-    // Validation minimale
     if (
       !shippingRequest.orderId ||
       typeof shippingRequest.quantity !== 'number'
