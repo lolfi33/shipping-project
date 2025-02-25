@@ -4,12 +4,18 @@ import {
   Post,
   Param,
   BadRequestException,
+  Body,
+  HttpCode,
 } from '@nestjs/common';
 import { StockService } from '../service/stock.service';
+import { ShippingService } from '../service/shipping.service';
 
 @Controller('shipping')
 export class ShippingController {
-  constructor(private readonly stockService: StockService) {}
+  constructor(
+    private readonly stockService: StockService,
+    private readonly shippingService: ShippingService,
+  ) {}
 
   @Get('ping')
   ping() {
@@ -35,5 +41,19 @@ export class ShippingController {
       }
     }
     return { message: `Produits de la commande ${orderId} supprimé des stock` };
+  }
+
+  @Post()
+  @HttpCode(204)
+  async createShipping(@Body() shippingRequest: any): Promise<void> {
+    if (
+      !shippingRequest.orderId ||
+      typeof shippingRequest.quantity !== 'number'
+    ) {
+      throw new BadRequestException(
+        'Payload invalide : orderId requis et quantity doit être un nombre.',
+      );
+    }
+    await this.shippingService.addShippingRequest(shippingRequest);
   }
 }
