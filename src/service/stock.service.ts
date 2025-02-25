@@ -9,13 +9,19 @@ export interface StockProductDto {
 @Injectable()
 export class StockService {
   async getOrderProducts(orderId: string): Promise<StockProductDto[]> {
-    console.log(
-      `Simuler la récupération des produits pour la commande ${orderId}`,
-    );
-    return [
-      { productId: 'prod-123', quantity: 2 },
-      { productId: 'prod-456', quantity: 1 },
-    ];
+    const mockOrders = {
+      '123': [
+        { productId: 'prod-123', quantity: 2 },
+        { productId: 'prod-456', quantity: 1 },
+      ],
+    };
+    if (!mockOrders[orderId]) {
+      console.warn(`La commande ${orderId} n'existe pas`);
+      return []; // Retourne une liste vide si la commande n'existe pas
+    }
+
+    console.log(`Récupération des produits pour la commande ${orderId}`);
+    return mockOrders[orderId];
   }
 
   async removeStock(productId: string, quantity: number): Promise<boolean> {
@@ -24,7 +30,7 @@ export class StockService {
     );
     // Bouchon temporaire pour tester sans dépendance au microservice stock
     const stockMock = {
-      'prod-123': 5,
+      'prod-123': 3,
       'prod-456': 10,
     };
 
@@ -40,7 +46,7 @@ export class StockService {
     // Code réel à réactiver une fois le microservice stock fonctionnel
     try {
       const response = await this.httpService.post(
-        `http://localhost:3000/api/stock/${productId}/movement`,
+        `$urlServeur/api/stock/${productId}/movement`,
         {
           productId,
           quantity,
