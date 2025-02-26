@@ -45,9 +45,7 @@ export class StockService {
   ): Promise<boolean> {
     try {
       const response = await lastValueFrom(
-        this.httpService.get(
-          `http://donoma.ddns.net/api/api/stock/${productId}`,
-        ),
+        this.httpService.get(`http://donoma.ddns.net/api/stock/${productId}`),
       );
 
       const availableStock = response.data.quantity;
@@ -69,7 +67,7 @@ export class StockService {
     try {
       const response = await lastValueFrom(
         this.httpService.post(
-          `http://donoma.ddns.net/api/api/stock/${productId}/movement`,
+          `http://donoma.ddns.net/api/stock/${productId}/movement`,
           {
             productId,
             nbProducts,
