@@ -20,15 +20,16 @@ export class StockService {
 
   async getOrderProducts(orderId: string): Promise<Order[]> {
     try {
-      const order = await this.ordersRepository.findOne({ where: { orderId } });
+      const orders = await this.ordersRepository.find({ where: { orderId } });
 
-      if (!order) {
+      if (!orders || orders.length === 0) {
         console.warn(`⚠️ La commande ${orderId} n'existe pas.`);
         return [];
       }
 
       console.log(`📦 Récupération des produits pour la commande ${orderId}`);
-      return [order]; // Retourne la commande trouvée sous forme de tableau
+
+      return orders; // Retourne directement la liste des objets `Order`
     } catch (error) {
       console.error(
         `❌ Erreur lors de la récupération des produits pour la commande ${orderId}`,
@@ -38,24 +39,33 @@ export class StockService {
     }
   }
 
-  async removeStock(productId: string, nbProducts: number): Promise<boolean> {
-    console.log(
-      `Demande de suppression de ${nbProducts} unités du produit ${productId}`,
-    );
+  async checkStockAvailability(
+    productId: string,
+    nbProducts: number,
+  ): Promise<boolean> {
+    try {
+      const response = await lastValueFrom(
+        this.httpService.get(
+          `http://donoma.ddns.net/api/api/stock/${productId}`,
+        ),
+      );
 
-    /* Bouchon - Décommenter cette section si besoin pour tester sans microservice stock
-    const stockMock = {
-      'prod-123': 3,
-      'prod-456': 10,
-    };
-    if (stockMock[productId] && stockMock[productId] >= nbProducts) {
-      console.log(`Stock suffisant pour ${productId}, suppression simulée.`);
-      return true;
-    } else {
-      console.warn(`Stock insuffisant pour ${productId}`);
+      const availableStock = response.data.quantity;
+      console.log(`📦 Stock disponible pour ${productId}: ${availableStock}`);
+      return availableStock >= nbProducts;
+    } catch (error) {
+      console.error(
+        `❌ Erreur lors de la vérification du stock pour ${productId}`,
+        error,
+      );
       return false;
     }
-    */
+  }
+
+  async removeStock(productId: string, nbProducts: number): Promise<boolean> {
+    console.log(
+      `🚨 Suppression de ${nbProducts} unités du produit ${productId}`,
+    );
     try {
       const response = await lastValueFrom(
         this.httpService.post(
@@ -70,7 +80,7 @@ export class StockService {
       return response.status === 204;
     } catch (error) {
       console.error(
-        `Erreur lors de la suppression du stock pour ${productId}`,
+        `❌ Erreur lors de la suppression du stock pour ${productId}`,
         error,
       );
       return false;
