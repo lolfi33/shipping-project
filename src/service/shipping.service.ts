@@ -76,6 +76,7 @@ export class ShippingService {
   }
 
   async create(shippingRequest: ShippingRequestDto): Promise<Order> {
+    console.log('Création de la demande de livraison :', shippingRequest);
     try {
       const order = this.ordersRepository.create(shippingRequest);
       return this.ordersRepository.save(order);
