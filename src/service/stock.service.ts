@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
+import { Order } from 'src/entities/Order';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 export interface StockProductDto {
   productId: string;
@@ -9,34 +12,26 @@ export interface StockProductDto {
 
 @Injectable()
 export class StockService {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    @InjectRepository(Order)
+    private readonly ordersRepository: Repository<Order>,
+  ) {}
 
-  async getOrderProducts(orderId: string): Promise<StockProductDto[]> {
-    /* Bouchon - Décommenter cette section si besoin pour tester sans microservice stock
-    const mockOrders = {
-      '123': [
-        { productId: 'prod-123', nbProducts: 2 },
-        { productId: 'prod-456', nbProducts: 1 },
-      ],
-    };
-    if (!mockOrders[orderId]) {
-      console.warn(`La commande ${orderId} n'existe pas`);
-      return []; // Retourne une liste vide si la commande n'existe pas
-    }
-
-    console.log(`Récupération des produits pour la commande ${orderId}`);
-    return mockOrders[orderId];
-    */
+  async getOrderProducts(orderId: string): Promise<Order[]> {
     try {
-      const response = await lastValueFrom(
-        this.httpService.get(
-          `http://microsrvcommande-5d7aa803.koyeb.app/api/api/orders/${orderId}`,
-        ),
-      );
-      return response.data;
+      const order = await this.ordersRepository.findOne({ where: { orderId } });
+
+      if (!order) {
+        console.warn(`⚠️ La commande ${orderId} n'existe pas.`);
+        return [];
+      }
+
+      console.log(`📦 Récupération des produits pour la commande ${orderId}`);
+      return [order]; // Retourne la commande trouvée sous forme de tableau
     } catch (error) {
       console.error(
-        `Erreur lors de la récupération des produits pour la commande ${orderId}`,
+        `❌ Erreur lors de la récupération des produits pour la commande ${orderId}`,
         error,
       );
       return [];
