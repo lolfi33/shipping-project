@@ -7,7 +7,7 @@ import { ShippingService } from './service/shipping.service';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,
+      isGlobal: true, // Optionnel : rend ConfigModule accessible globalement
     }),
     HttpModule,
   ],
