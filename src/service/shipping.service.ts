@@ -10,6 +10,7 @@ import { ShippingRequestDto } from 'src/dto/ShippingRequestDto';
 import { Order } from 'src/entities/Order';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { StockService } from './stock.service';
 
 @Injectable()
 export class ShippingService {
@@ -22,6 +23,7 @@ export class ShippingService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly stockService: StockService, // ✅ Injecter StockService
     @InjectRepository(Order)
     private ordersRepository: Repository<Order>,
   ) {}
@@ -48,30 +50,52 @@ export class ShippingService {
 
   /**
    * Récupère les commandes non traitées dans la base de données,
-   * envoie une notification au microservice commande pour indiquer
-   * que la commande est traitée, et met à jour la commande en base.
+   * vérifie si les produits sont en stock, envoie une notification
+   * au microservice commande pour indiquer que la commande est traitée,
+   * et met à jour la commande en base.
    */
   private async processPendingOrders(): Promise<void> {
-    // On récupère l'ensemble des commandes dans la base de données
+    // 1️⃣ Récupération des commandes en base
     const pendingOrdersFromDB = await this.ordersRepository.find();
 
-    // Récupération de l'URL du système de commande réel
+    // URL du microservice commande
     const orderServiceUrl =
       this.configService.get<string>('ORDER_SERVICE_URL') ||
       'http://microsrvcommande-5d7aa803.koyeb.app';
 
     for (const order of pendingOrdersFromDB) {
-      const url = `${orderServiceUrl}/api/order/${order.orderId}`;
-      const updateData = { status: 'Processed' };
+      console.log(`🔍 Vérification du stock pour la commande ${order.orderId}`);
 
-      try {
-        await lastValueFrom(this.httpService.patch(url, updateData));
-        this.logger.log(`Commande ${order.orderId} traitée avec succès.`);
-        await this.ordersRepository.save(order);
-      } catch (error) {
-        this.logger.error(
-          `Erreur lors du traitement de la commande ${order.orderId}: ${error.message}`,
+      // 2️⃣ Vérifier si tous les produits de la commande sont en stock
+      const isStockAvailable = await this.stockService.checkStockAvailability(
+        order.orderId,
+        order.nbProducts,
+      );
+
+      if (isStockAvailable) {
+        console.log(
+          `✅ Stock disponible pour la commande ${order.orderId}, traitement...`,
         );
+
+        const url = `${orderServiceUrl}/api/order/${order.orderId}`;
+        const updateData = { status: 'Processed' };
+
+        try {
+          // 3️⃣ Notification au microservice commande
+          await lastValueFrom(this.httpService.patch(url, updateData));
+          this.logger.log(`📦 Commande ${order.orderId} traitée avec succès.`);
+
+          await this.ordersRepository.save(order);
+        } catch (error) {
+          this.logger.error(
+            `❌ Erreur lors du traitement de la commande ${order.orderId}: ${error.message}`,
+          );
+        }
+      } else {
+        console.warn(
+          `❌ Stock insuffisant pour la commande ${order.orderId}, suppression.`,
+        );
+        await this.ordersRepository.delete(order.orderId);
       }
     }
   }
