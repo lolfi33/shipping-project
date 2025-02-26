@@ -41,33 +41,21 @@ export class ShippingService {
   }
 
   private async processPendingOrders(): Promise<void> {
-    const mockMode = this.configService.get<boolean>('MOCK_ORDER_SERVICE');
     const orderServiceUrl =
       this.configService.get<string>('ORDER_SERVICE_URL') ||
-      'http://order-service';
+      'http://microsrvcommande-5d7aa803.koyeb.app';
 
-    if (mockMode) {
-      this.logger.log(
-        'Mode MOCK activé : simulation de traitement des commandes',
-      );
-      for (const order of this.pendingOrders) {
-        this.logger.log(
-          `(MOCK) Commande ${order.orderId} traitée avec succès.`,
+    for (const order of this.pendingOrders) {
+      const url = `${orderServiceUrl}/api/order/${order.orderId}`;
+      const updateData = { status: 'Processed' };
+
+      try {
+        await lastValueFrom(this.httpService.patch(url, updateData));
+        this.logger.log(`Commande ${order.orderId} traitée avec succès.`);
+      } catch (error) {
+        this.logger.error(
+          `Erreur lors du traitement de la commande ${order.orderId}: ${error.message}`,
         );
-      }
-    } else {
-      for (const order of this.pendingOrders) {
-        const url = `${orderServiceUrl}/api/order/${order.orderId}`;
-        const updateData = { status: 'Processed' };
-
-        try {
-          await lastValueFrom(this.httpService.patch(url, updateData));
-          this.logger.log(`Commande ${order.orderId} traitée avec succès.`);
-        } catch (error) {
-          this.logger.error(
-            `Erreur lors du traitement de la commande ${order.orderId}: ${error.message}`,
-          );
-        }
       }
     }
 
